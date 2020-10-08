@@ -34,9 +34,10 @@ class HomeViewController: UIViewController {
 // MARK: - Init UI and Data
 extension HomeViewController {
     func initView() {
-        self.viewModel.selectedRole = "All"
-        self.title = self.viewModel.selectedRole
         self.navigationItem.rightBarButtonItem = UIBarButtonItem(image: UIImage(named: "ic-filter"), style:.plain, target: self, action: #selector(onFilterPressed))
+        
+        // Set Filter Role
+        self.setRoleAndTitle("All")
     }
     
     func initCollectionView(){
@@ -92,10 +93,19 @@ extension HomeViewController: HomeViewModelDelegate {
 // MARK: - Home ViewModel Response
 extension HomeViewController: HomeViewModelResponse {
     func successGetHeroList() {
+        
+        // Set Filter Role
+        self.setRoleAndTitle("All")
+        
+        // Delete existing heroes on core data
         self.coredataHelper.deleteAllHero()
+        
+        // Save heroes to core data
         self.viewModel.heroListModel.forEach { (heroModel) in
             self.coredataHelper.saveMovie(hero: heroModel)
         }
+        
+        // create list role
         self.viewModel.createRolesFilter()
         self.collectionView.reloadData()
     }
@@ -110,11 +120,15 @@ extension HomeViewController: CoreDataHelperDelegate {
     func successCoreData(_ type: EnumCoreDataOperation) {
         switch type {
         case .getAll:
+            
+            // check if heroes already exist on core data
             if self.coredataHelper.heroList.count > 0 {
                 self.viewModel.heroListModel = self.coredataHelper.heroList
             }else {
                 self.viewModel.getHeroList()
             }
+            
+            // create list role
             self.viewModel.createRolesFilter()
             self.collectionView.reloadData()
         default:
@@ -159,8 +173,11 @@ extension HomeViewController: UICollectionViewDataSource, UICollectionViewDelega
 extension HomeViewController: FilterRolesViewControllerDelegate {
     func selectedRole(role: String) {
         guard self.viewModel.selectedRole != role else { return }
-        self.viewModel.selectedRole = role
-        self.title = self.viewModel.selectedRole
+        
+        // Set Filter Role
+        self.setRoleAndTitle(role)
+        
+        // filter heroes with selected role or all role
         if role == "All" {
             self.coredataHelper.getAllHero()
         }else{
@@ -168,6 +185,11 @@ extension HomeViewController: FilterRolesViewControllerDelegate {
             self.viewModel.filterHeroList()
             self.collectionView.reloadData()
         }
+    }
+    
+    func setRoleAndTitle(_ role:String){
+        self.viewModel.selectedRole = role
+        self.title = self.viewModel.selectedRole
     }
 }
 
